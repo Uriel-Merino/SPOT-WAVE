@@ -11,45 +11,45 @@ import numpy as np
 import wavepal as wv
 
 
-# _CARMCMC_LOADED = False
+_CARMCMC_LOADED = False
 
 
-# def setup_carmcmc(path=None, verbose=True):
-#     """
-#     Adds the path to the carma_pack (CARMCMC) build to sys.path and
-#     imports the module, just like cell 1 of SPOT_WAVE.ipynb.
+def setup_carmcmc(path=None, verbose=True):
+    """
+    Adds the path to the carma_pack (CARMCMC) build to sys.path and
+    imports the module, just like cell 1 of SPOT_WAVE.ipynb.
 
-#     Parameters
-#     ----------
-#     path : str, optional
-#         Path to .../carmcmc/carma_pack/src . If not given, the
-#         SPOT_WAVE_CARMCMC_PATH environment variable is used if it exists.
-#     verbose : bool
-#         If True, print the confirmation message (as in the notebook).
+    Parameters
+    ----------
+    path : str, optional
+        Path to .../carmcmc/carma_pack/src . If not given, the
+        SPOT_WAVE_CARMCMC_PATH environment variable is used if it exists.
+    verbose : bool
+        If True, print the confirmation message (as in the notebook).
 
-#     Returns
-#     -------
-#     carmcmc module, or None if it could not be loaded.
-#     """
-#     global _CARMCMC_LOADED
+    Returns
+    -------
+    carmcmc module, or None if it could not be loaded.
+    """
+    global _CARMCMC_LOADED
 
-#     rute_carmcmc = path or os.environ.get("SPOT_WAVE_CARMCMC_PATH")
-#     if rute_carmcmc and rute_carmcmc not in sys.path:
-#         sys.path.insert(0, rute_carmcmc)
+    rute_carmcmc = path or os.environ.get("SPOT_WAVE_CARMCMC_PATH")
+    if rute_carmcmc and rute_carmcmc not in sys.path:
+        sys.path.insert(0, rute_carmcmc)
 
-#     try:
-#         import carmcmc  # noqa: F401
-#     except ImportError as e:
-#         if verbose:
-#             print("[spot_wave] Warning: could not import carmcmc ({0}). "
-#                   "Set SPOT_WAVE_CARMCMC_PATH or pass `path=` to "
-#                   "setup_carmcmc().".format(e))
-#         return None
+    try:
+        import carmcmc  # noqa: F401
+    except ImportError as e:
+        if verbose:
+            print("[spot_wave] Warning: could not import carmcmc ({0}). "
+                  "Set SPOT_WAVE_CARMCMC_PATH or pass `path=` to "
+                  "setup_carmcmc().".format(e))
+        return None
 
-#     _CARMCMC_LOADED = True
-#     if verbose:
-#         print("CARMCMC has been successfully loaded with all its C++ libraries!")
-#     return carmcmc
+    _CARMCMC_LOADED = True
+    if verbose:
+        print("CARMCMC has been successfully loaded with all its C++ libraries!")
+    return carmcmc
 
 
 #####################
