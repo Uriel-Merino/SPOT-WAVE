@@ -1,0 +1,15 @@
+numpy
+pandas
+matplotlib
+scipy
+seaborn
+joblib
+# CONAN (tu fork) se instala solo via pyproject.toml (git+https://github.com/Uriel-Merino/CONAN.git)
+#
+# wavepal (con CARMCMC en carmcmc/) NO esta en PyPI ni se instala via pip:
+# es un paquete de origen Python 2 cuyo carmcmc/ compila contra BOOST y
+# ARMADILLO mediante Linux_install.sh / MacOSX_install.sh. Instalalo a
+# mano y apunta SPOT_WAVE_CARMCMC_PATH / PYTHONPATH a sus rutas (ver
+# README, seccion "Instalacion"):
+#   git clone https://github.com/Uriel-Merino/WAVEPAL.git
+#   cd WAVEPAL && sh Linux_install.sh
