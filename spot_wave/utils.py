@@ -2,100 +2,79 @@
 """
 utils.py
 Support functions for spot_wave: locating CARMCMC, loading RV files,
-checking CWT feasibility, and a wrapper around
-wavepal.timefreq_analysis.
-
-Everything here comes from your notebook SPOT_WAVE.ipynb (cells 1, 1.1
-and 1.2), generalized so it no longer depends on hardcoded paths or a
-single specific file.
+checking CWT feasibility, and a wrapper around wavepal.timefreq_analysis.
 """
 
 import os
 import sys
-
 import numpy as np
 import wavepal as wv
 
-# ---------------------------------------------------------------------------
-# CARMCMC
-# ---------------------------------------------------------------------------
-# wavepal uses CARMCMC (with C++ extensions) to model correlated noise and
-# estimate the confidence levels of the scalogram. The path to the
-# carma_pack build is machine-specific, so instead of hardcoding it (as in
-# the notebook) it is resolved, in this order:
-#   1) explicit `path` argument
-#   2) SPOT_WAVE_CARMCMC_PATH environment variable
-#   3) sys.path is left untouched (we assume carmcmc is already importable)
-_CARMCMC_LOADED = False
+
+# _CARMCMC_LOADED = False
 
 
-def setup_carmcmc(path=None, verbose=True):
-    """
-    Adds the path to the carma_pack (CARMCMC) build to sys.path and
-    imports the module, just like cell 1 of SPOT_WAVE.ipynb.
+# def setup_carmcmc(path=None, verbose=True):
+#     """
+#     Adds the path to the carma_pack (CARMCMC) build to sys.path and
+#     imports the module, just like cell 1 of SPOT_WAVE.ipynb.
 
-    Parameters
-    ----------
-    path : str, optional
-        Path to .../carmcmc/carma_pack/src . If not given, the
-        SPOT_WAVE_CARMCMC_PATH environment variable is used if it exists.
-    verbose : bool
-        If True, print the confirmation message (as in the notebook).
+#     Parameters
+#     ----------
+#     path : str, optional
+#         Path to .../carmcmc/carma_pack/src . If not given, the
+#         SPOT_WAVE_CARMCMC_PATH environment variable is used if it exists.
+#     verbose : bool
+#         If True, print the confirmation message (as in the notebook).
 
-    Returns
-    -------
-    carmcmc module, or None if it could not be loaded.
-    """
-    global _CARMCMC_LOADED
+#     Returns
+#     -------
+#     carmcmc module, or None if it could not be loaded.
+#     """
+#     global _CARMCMC_LOADED
 
-    rute_carmcmc = path or os.environ.get("SPOT_WAVE_CARMCMC_PATH")
-    if rute_carmcmc and rute_carmcmc not in sys.path:
-        sys.path.insert(0, rute_carmcmc)
+#     rute_carmcmc = path or os.environ.get("SPOT_WAVE_CARMCMC_PATH")
+#     if rute_carmcmc and rute_carmcmc not in sys.path:
+#         sys.path.insert(0, rute_carmcmc)
 
-    try:
-        import carmcmc  # noqa: F401
-    except ImportError as e:
-        if verbose:
-            print("[spot_wave] Warning: could not import carmcmc ({0}). "
-                  "Set SPOT_WAVE_CARMCMC_PATH or pass `path=` to "
-                  "setup_carmcmc().".format(e))
-        return None
+#     try:
+#         import carmcmc  # noqa: F401
+#     except ImportError as e:
+#         if verbose:
+#             print("[spot_wave] Warning: could not import carmcmc ({0}). "
+#                   "Set SPOT_WAVE_CARMCMC_PATH or pass `path=` to "
+#                   "setup_carmcmc().".format(e))
+#         return None
 
-    _CARMCMC_LOADED = True
-    if verbose:
-        print("CARMCMC has been successfully loaded with all its C++ libraries!")
-    return carmcmc
+#     _CARMCMC_LOADED = True
+#     if verbose:
+#         print("CARMCMC has been successfully loaded with all its C++ libraries!")
+#     return carmcmc
 
 
-# ---------------------------------------------------------------------------
-# RV DATA LOADING
-# ---------------------------------------------------------------------------
+#####################
+"""RV DATA LOADING"""
+#####################
+
 def load_rv_file(filename, subtract_instrument_means=True, avoid_time_collisions=True,
                   eps=1.1e-5):
     """
-    Loads an RV file with the same logic as cell 1.1 of the notebook:
+    Loads an RV file:
     detects whether there is a header, detects the number of columns, and
     if there is an instrument column (4th column) subtracts the mean RV
     per instrument.
-
+    
     Expected column layout: time, RV, RV_err[, instrument]
 
-    Parameters
-    ----------
+    Arguments:
     filename : str
         Path to the RV .dat file.
     subtract_instrument_means : bool
         If there are several instruments, subtract each one's mean (offset).
     avoid_time_collisions : bool
         If True, shift duplicated/non-increasing timestamps by `eps`
-        (required by wavepal, same as in analyze_filter_sweep_v3.py).
     eps : float
         Time shift used to avoid collisions.
-
-    Returns
-    -------
-    t, rv, rv_err : np.ndarray
-    instruments : np.ndarray of str ("single_instrument" if none were found)
     """
     with open(filename) as f:
         first_line = f.readline().strip()
@@ -140,6 +119,10 @@ def load_rv_file(filename, subtract_instrument_means=True, avoid_time_collisions
     return t, rv, rv_err, instruments
 
 
+###########################
+"""EXTRACTING K INJECTED"""
+###########################
+
 def parse_k_true(filename, header_regex=None):
     """
     Extracts the "true" (injected) semi-amplitude K from the file's first
@@ -157,18 +140,18 @@ def parse_k_true(filename, header_regex=None):
     return np.nan, header
 
 
-# ---------------------------------------------------------------------------
-# CWT FEASIBILITY
-# ---------------------------------------------------------------------------
+#####################
+"""CWT FEASIBILITY"""
+#####################
+
 def test_cwt_feasibility(wave_obj, w0=8.5, verbose=True):
     """
     Quick sanity check to see if the dataset can handle a CWT with the
-    given w0. Identical to the function in cell 1.2 of the notebook.
+    given w0.
 
-    Note: these are theoretical approximations (Torrence & Compo /
-    wavepal). Depending on your noise level and the distribution of gaps
-    in time, you might spot signals slightly outside these bounds. Use it
-    as a rule of thumb.
+    Note: these are theoretical approximations:
+    Alarcón Guerri, V., et al. 2026, TFG, Universitat de Barcelona 
+    and Merino Tamaral, U., et al. 2026, TFG, Universitat de Barcelona.
     """
     N = wave_obj.t.size
     w0_min = 5.5
@@ -185,10 +168,10 @@ def test_cwt_feasibility(wave_obj, w0=8.5, verbose=True):
         print("Preliminary CWT Feasibility Analysis\n")
         print(f"Total points (N): {N}")
         if N < 50:
-            print("Heads up: Less than 50 points. The scalogram is going to be mostly artifacts.")
+            print("Heads up: Less than 50 points. No work to do here!")
         print(f"Recommended w0 range: [{w0_min}, {w0_max:.2f}]")
         if w0 < w0_min or w0 > w0_max:
-            print(f"Warning: Your chosen w0 ({w0}) is outside the safe zone. Things might get weird.\n")
+            print(f"Warning: Your chosen w0 ({w0}) is outside the safe zone.\n")
         else:
             print(f"Selected w0 ({w0}) is within the optimal range.\n")
         print(f"Avg cadence: {cadence:.2f} days")
@@ -210,18 +193,34 @@ def test_cwt_feasibility(wave_obj, w0=8.5, verbose=True):
     return True
 
 
-# ---------------------------------------------------------------------------
-# WAVEPAL WRAPPER
-# ---------------------------------------------------------------------------
+#####################
+"""WAVEPAL WRAPPER"""
+#####################
+
 def wavepal_analyze(t, y, w0, permin=1.0, permax=200.0, deltaj=0.01,
                      percentile=(95., 99.9), t_units="days", mydata_units="m/s",
                      trend_degree=-1, verbose=False):
     """
     Creates and runs a wavepal.Wavepal object for (t, y) with a given w0.
-    Equivalent to wavepal_analyze() in analyze_filter_sweep_v3.py, but
-    generalized (configurable percentiles and units).
+    Arguments:
+    t, y : array-like
+        Time and RV arrays.
+    w0 : float
+        Wavelet parameter. See wavepal docs.
+    permin, permax : float
+        Minimum and maximum periods to analyze (in t_units).
+    deltaj : float
+        Wavelet scale resolution. See wavepal docs.
+    percentile : tuple(float, float)
+        Percentiles for the significance contours. See wavepal docs.
+    t_units, mydata_units : str
+        Units for time and data. See wavepal docs.
+    trend_degree : int
+        Degree of polynomial to fit the trend. -1 means no trend removal.
+    verbose : bool
+        If True, print the analysis parameters.
     """
-    wave = wv.Wavepal(t, y, "BJD", "STEP", t_units=t_units, mydata_units=mydata_units)
+    wave = wv.Wavepal(t, y, "Time", "RV", t_units=t_units, mydata_units=mydata_units)
     wave.check_data()
     wave.choose_trend_degree(trend_degree)
     wave.trend_vectors()

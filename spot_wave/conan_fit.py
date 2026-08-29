@@ -1,16 +1,35 @@
 # -*- coding: utf-8 -*-
 """
 conan_fit.py
-CONAN wrapper to fit the winning residuals (single or double filter) of a
-SINGLE target, and extract their metrics/posteriors.
-
-Gathers, with no logic changes, run_conan_fit / extract_conan_metrics /
-extract_k_posterior from analyze_filter_sweep_v3.py and
-analyze_filter_sweep_syst.py.
+CONAN to fit the winning residuals (single or double filter), and extract their metrics/posteriors.
 """
 
 import os
 import numpy as np
+
+
+def build_planet_pars(planets):
+    """
+    Builds the `planet_pars` dict expected by CONAN.load_rvs /
+    rv_obj.planet_parameters(**planet_pars) from a list of per-planet
+    dicts, so multi-planet systems don't have to be assembled by hand.
+
+    Arguments:
+    planets : list[dict]
+        Each dict should contain the keys:
+            t0, t0_err, period, period_err, k_prior_max
+        and optionally:
+            eccentricity, omega
+    """
+    planet_pars = dict(T_0=[], Period=[], Eccentricity=[], omega=[], K=[])
+    for pl in planets:
+        planet_pars["T_0"].append((pl["t0"], pl["t0_err"]))
+        planet_pars["Period"].append((pl["period"], pl["period_err"]))
+        planet_pars["Eccentricity"].append(pl.get("eccentricity", 0))
+        planet_pars["omega"].append(pl.get("omega", 90))
+        k_max = pl["k_prior_max"]
+        planet_pars["K"].append((0.2, k_max / 2.0, k_max))
+    return planet_pars, len(planets)
 
 
 def run_conan_fit(filtered_data_files, data_path, output_folder, planet_pars,
@@ -18,8 +37,7 @@ def run_conan_fit(filtered_data_files, data_path, output_folder, planet_pars,
     """
     Launches a CONAN fit on the given residual file(s).
 
-    Parameters
-    ----------
+    Arguments:
     filtered_data_files : list[str]
         File names (relative to `data_path`) with the winning residual.
     data_path : str
@@ -30,17 +48,13 @@ def run_conan_fit(filtered_data_files, data_path, output_folder, planet_pars,
         kwargs for rv_obj.planet_parameters(**planet_pars), e.g.:
             dict(T_0=[(t0, sigma_t0)], Period=[(P, sigma_P)],
                  Eccentricity=[0], omega=[90],
-                 K=[(0.0, K_prior_max/2., K_prior_max)])
+                 K=[(0.2, K_prior_max/2., K_prior_max)])
     m_star : tuple(float, float)
         (stellar_mass, error) in M_sun.
     gamma_prior : list
         RV offset prior, e.g. [(0, 30)].
     n_planets, n_live, n_cpus_conan : int
         CONAN.fit_setup / sampling parameters.
-
-    Returns
-    -------
-    str : path to the generated posteriors.dat file.
     """
     import CONAN
     os.makedirs(output_folder, exist_ok=True)
@@ -94,14 +108,16 @@ def extract_conan_metrics(output_folder, n_data_points, extra_params=2):
             "AIC_corrected": aic_total, "BIC_corrected": bic_total}
 
 
+import os
+import numpy as np
+
 def extract_k_posterior(output_folder, planet_index=1):
     """
     Reads results_med.dat and flexibly extracts K (or K_<planet_index> if
     there are several planets): median plus 1-sigma and 3-sigma
     intervals.
 
-    Returns
-    -------
+    Returns:
     tuple (K_med, K_lo_1sigma, K_hi_1sigma, K_lo_3sigma, K_hi_3sigma)
     All np.nan if the row is not found or the file does not exist.
     """
@@ -109,16 +125,21 @@ def extract_k_posterior(output_folder, planet_index=1):
     if not os.path.exists(res_path):
         return np.nan, np.nan, np.nan, np.nan, np.nan
 
-    targets = {"K", f"K_{planet_index}"}
+    if planet_index == 1:
+        targets = {"K", "K_1"}
+    else:
+        targets = {f"K_{planet_index}"}
+
     with open(res_path, "r") as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
+            
             parts = line.split()
-
             if parts[0] not in targets:
                 continue
+            
             if len(parts) < 6:
                 return np.nan, np.nan, np.nan, np.nan, np.nan
 
@@ -128,9 +149,25 @@ def extract_k_posterior(output_folder, planet_index=1):
 
             lo1, hi1 = med + m1, med + p1
             lo3, hi3 = med + m3, med + p3
+            
             return float(med), float(lo1), float(hi1), float(lo3), float(hi3)
 
     return np.nan, np.nan, np.nan, np.nan, np.nan
+
+
+def extract_all_k_posteriors(output_folder, n_planets):
+    """
+    Convenience wrapper around extract_k_posterior() for multi-planet
+    fits: extracts K_1, K_2, ..., K_<n_planets> in one call.
+
+    Returns:
+    dict {planet_index: (K_med, K_lo_1sigma, K_hi_1sigma, K_lo_3sigma, K_hi_3sigma)}
+    with planet_index running from 1 to n_planets.
+    """
+    return {
+        i: extract_k_posterior(output_folder, planet_index=i)
+        for i in range(1, n_planets + 1)
+    }
 
 
 def evaluate_k_recovery(k_med, k_lo1, k_hi1, k_lo3, k_hi3, k_true):
@@ -146,4 +183,23 @@ def evaluate_k_recovery(k_med, k_lo1, k_hi1, k_lo3, k_hi3, k_true):
         "recovered_within_1sigma": bool(k_lo1 <= k_true <= k_hi1),
         "recovered_within_3sigma": bool(k_lo3 <= k_true <= k_hi3),
         "K_residual": k_med - k_true,
+    }
+
+
+def evaluate_all_k_recovery(k_posteriors, k_true_by_planet):
+    """
+    Multi-planet version of evaluate_k_recovery(): applies it to every
+    planet in `k_posteriors` (as returned by extract_all_k_posteriors()).
+
+    Arguments:
+    k_posteriors : dict {planet_index: (K_med, lo1, hi1, lo3, hi3)}
+    k_true_by_planet : dict {planet_index: K_true}
+        Injected K for each planet index, if known (np.nan otherwise).
+
+    Returns:
+    dict {planet_index: evaluate_k_recovery(...) result}
+    """
+    return {
+        i: evaluate_k_recovery(*k_posteriors[i], k_true_by_planet.get(i, np.nan))
+        for i in k_posteriors
     }

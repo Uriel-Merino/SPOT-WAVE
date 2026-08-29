@@ -1,20 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-scalogram.py
-Functions from the "2. SCALOGRAM" section of SPOT_WAVE.ipynb:
-time-frequency analysis with a fixed w0, scalogram plotting, and the w0
-sweep ("2.1. Loop w0") that produces one PDF per w0 and, optionally,
-re-estimates the detectable period range from the text wavepal prints.
-"""
 
 import os
 import re
 import io
 import contextlib
-
 import numpy as np
 import matplotlib.pyplot as plt
-
 from .utils import wavepal_analyze
 
 DEFAULT_PERCENTILES = (95., 99., 99.9)
@@ -26,16 +17,43 @@ DEFAULT_PERIOD_STRING = [5., 10., 12., 15., 20., 25., 30., 35., 40., 45., 50.,
 
 def analyze_and_plot(wave, w0=7.0, permin=1.0, permax=200.0, deltaj=0.01,
                       percentile=DEFAULT_PERCENTILES, time_string=None,
-                      period_string=None, dashed_periods=None, figsize=(24, 12),
-                      **plot_kwargs):
+                      period_string=None, dashed_periods=None, planet_periods=None,
+                      figsize=(24, 12), **plot_kwargs):
     """
-    Runs wave.timefreq_analysis with a fixed w0 and returns the scalogram
-    figure (equivalent to cell 2, and cells 10-12 of the notebook, with
-    w0=7.0 by default).
+    Runs wave.timefreq_analysis with a fixed w0 and returns the scalogram figure.
+
+    Arguments:
+    wave : wavepal.Wavepal
+        The Wavepal object to analyze.
+    w0 : float
+        The wavelet parameter for the CWT.
+    permin : float
+        Minimum period for the analysis.
+    permax : float
+        Maximum period for the analysis.
+    deltaj : float
+        Scalogram resolution.
+    percentile : tuple of floats
+        Percentiles to compute for the scalogram.
+    time_string : list of floats, optional
+        Custom time ticks for the scalogram.
+    period_string : list of floats, optional
+        Custom period ticks for the scalogram.
+    dashed_periods : list of floats, optional
+        Periods to be highlighted with dashed lines on the scalogram.
+    planet_periods : list of floats, optional
+        Additional periods to be highlighted with dashed lines on the scalogram.
+    figsize : tuple of floats
+        Size of the figure to be created.
+    plot_kwargs : dict
+        Additional keyword arguments to pass to the plotting function.
     """
     time_string = time_string or DEFAULT_TIME_STRING
     period_string = period_string or DEFAULT_PERIOD_STRING
-    dashed_periods = dashed_periods or period_string
+    dashed_periods = list(dashed_periods) if dashed_periods is not None else list(period_string)
+    if planet_periods is not None:
+        extra = [planet_periods] if np.isscalar(planet_periods) else list(planet_periods)
+        dashed_periods = sorted(set(dashed_periods) | set(extra))
 
     wave.timefreq_analysis(
         theta=wave.t, w0=float(w0), permin=permin, permax=permax, deltaj=deltaj,
@@ -59,17 +77,47 @@ _RANGE_PATTERN = re.compile(
 def w0_loop(wave, output_dir, w0_min=5.5, w0_max=196.0, w0_step=2.0,
             permin=1.0, permax=200.0, deltaj=0.05, percentile=DEFAULT_PERCENTILES,
             time_string=None, period_string=None, dashed_periods=None,
-            figsize=(24, 12), save_period_ranges=True, verbose=True):
+            planet_periods=None, figsize=(24, 12), save_period_ranges=True,
+            verbose=True):
     """
     w0 sweep: for each value, saves a scalogram PDF and, if
     `save_period_ranges`, captures the "Re-estimated period range" that
     wavepal prints, to keep a record of the reliable period range for
-    each w0 (equivalent to cell 2.1 of the notebook).
+    each w0.
 
-    Returns
-    -------
-    list[(w0, period_min, period_max)]  (period_min/max = np.nan if
-    wavepal's output could not be parsed for that w0).
+    Arguments:
+    wave : wavepal.Wavepal
+        The Wavepal object to analyze.
+    output_dir : str
+        Directory where the scalogram PDFs and period ranges will be saved.
+    w0_min : float
+        Minimum w0 value for the sweep.
+    w0_max : float
+        Maximum w0 value for the sweep.
+    w0_step : float
+        Step size for the w0 sweep.
+    permin : float
+        Minimum period for the analysis.
+    permax : float
+        Maximum period for the analysis.
+    deltaj : float
+        Scalogram resolution.
+    percentile : tuple of floats
+        Percentiles to compute for the scalogram.
+    time_string : list of floats, optional
+        Custom time ticks for the scalogram.
+    period_string : list of floats, optional
+        Custom period ticks for the scalogram.
+    dashed_periods : list of floats, optional
+        Periods to be highlighted with dashed lines on the scalogram.
+    planet_periods : list of floats, optional
+        Additional periods to be highlighted with dashed lines on the scalogram.
+    figsize : tuple of floats
+        Size of the figure to be created.
+    save_period_ranges : bool
+        If True, captures the "Re-estimated period range" from wavepal's output and saves it to a text file.
+    verbose : bool
+        If True, prints progress and warnings during the sweep.
     """
     os.makedirs(output_dir, exist_ok=True)
     w0_values = np.arange(w0_min, w0_max + w0_step / 2, w0_step)
@@ -84,7 +132,7 @@ def w0_loop(wave, output_dir, w0_min=5.5, w0_max=196.0, w0_step=2.0,
                     wave, w0=w0, permin=permin, permax=permax, deltaj=deltaj,
                     percentile=percentile, time_string=time_string,
                     period_string=period_string, dashed_periods=dashed_periods,
-                    figsize=figsize,
+                    planet_periods=planet_periods, figsize=figsize,
                 )
             captured_text = buf.getvalue()
             matches = _RANGE_PATTERN.findall(captured_text)
@@ -101,7 +149,7 @@ def w0_loop(wave, output_dir, w0_min=5.5, w0_max=196.0, w0_step=2.0,
                 wave, w0=w0, permin=permin, permax=permax, deltaj=deltaj,
                 percentile=percentile, time_string=time_string,
                 period_string=period_string, dashed_periods=dashed_periods,
-                figsize=figsize,
+                planet_periods=planet_periods, figsize=figsize,
             )
 
         output_file = os.path.join(output_dir, f"scalogram_w0_{w0:.2f}.pdf")
