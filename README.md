@@ -14,7 +14,7 @@ this library instead of duplicating the logic.
 
 ## Structure
 
-```
+```text
 spot_wave/
 ├── __init__.py      # public API of the package
 ├── __main__.py       # CLI: python -m spot_wave single|double ...
@@ -27,49 +27,75 @@ spot_wave/
 
 ## Installation
 
-External dependencies:
+This pipeline requires a virtual environment (`venv`) to isolate C++ bindings and handle dynamic path routing for the system dependencies. 
 
-- **CONAN** — your fork: [Uriel-Merino/CONAN](https://github.com/Uriel-Merino/CONAN).
-  This one installs **automatically** when installing `spot_wave`,
-  because the fork keeps CONAN's modern `pyproject.toml`/`setup.py`
-  (declared in `pyproject.toml` as
-  `conan-exoplanet @ git+https://github.com/Uriel-Merino/CONAN.git`).
+### 1. Create and Activate Virtual Environment
+```bash
+python3 -m venv spot_wave_v1
+source spot_wave_v1/bin/activate
+```
 
-- **wavepal + CARMCMC** — your fork:
-  [Uriel-Merino/WAVEPAL](https://github.com/Uriel-Merino/WAVEPAL) (forked
-  from `guillaumelenoir/WAVEPAL`). This one does **NOT** install itself:
-  it's a package with Python 2 origins (you already ported the
-  `wavepal/` folder to Python3) whose installation goes through
-  `Linux_install.sh` / `MacOSX_install.sh`, because the `carmcmc/`
-  subfolder (CARMCMC/`carma_pack`) needs to be compiled against
-  **BOOST** and **ARMADILLO** (system C++ libraries) — something pip
-  cannot resolve on its own. Install it manually:
+### 2. Install System Dependencies
+CARMCMC requires BOOST and ARMADILLO system C++ libraries to compile.
 
-  ```bash
-  git clone https://github.com/Uriel-Merino/WAVEPAL.git
-  cd WAVEPAL
-  sh Linux_install.sh   # or MacOSX_install.sh on Mac
-  ```
+**Ubuntu / Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install libboost-all-dev libboost-python-dev libarmadillo-dev
+```
+*(Note for Linux users: If the compiler cannot find the Boost Python library during step 4, create a symlink matching your Python version, e.g., `sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python3.so /usr/lib/x86_64-linux-gnu/libboost_python310.so`)*
 
-  then point `SPOT_WAVE_CARMCMC_PATH` to
-  `<clone_path>/WAVEPAL/carmcmc/carma_pack/src` (or pass it to
-  `setup_carmcmc(path=...)`).
+**macOS (via Homebrew):**
+```bash
+brew install boost armadillo
+```
 
-- **gls** (Zechmeister & Kürster periodogram) — the `gls.py` module you
-  already use in your pipeline; add it to the PYTHONPATH or copy it into
-  the repo.
+### 3. Install spot_wave and CONAN
+Installing `spot_wave` in editable mode automatically clones and installs the required CONAN fork.
+```bash
+git clone [https://github.com/Uriel-Merino/SPOT-WAVE](https://github.com/Uriel-Merino/SPOT-WAVE)
+cd SPOT-WAVE
+pip install -e .
+cd ..
+```
+
+### 4. Compile and Install WAVEPAL + CARMCMC
+The original `Linux_install.sh` and `MacOSX_install.sh` scripts are deprecated for modern Python 3. The `carmcmc` library must be compiled manually. 
+
+Clone the repository and compile the C++ extension in place:
+```bash
+git clone [https://github.com/Uriel-Merino/WAVEPAL.git](https://github.com/Uriel-Merino/WAVEPAL.git)
+cd WAVEPAL/carmcmc_pack/carma_pack/src
+python setup.py build_ext --inplace
+```
+
+Navigate back to the WAVEPAL root, install the package bypassing dependency checks, and manually install the missing `acor` module:
+```bash
+cd ../../../
+pip install --no-deps .
+pip install acor
+cd ..
+```
+
+### 5. Configure Dynamic Paths (Portability)
+To ensure the pipeline is portable and works seamlessly without hardcoding user paths, inject the CARMCMC path and the `gls.py` location directly into the virtual environment's activation script. 
+
+Ensure your `gls.py` file is placed directly inside the main `spot_wave_v1` folder, then run:
 
 ```bash
-git clone [Uriel-Merino/WAVEPAL](https://github.com/Uriel-Merino/SPOT-WAVE)
-cd spot_wave
-pip install -e .          # installs spot_wave + CONAN automatically
+echo 'export SPOT_WAVE_CARMCMC_PATH="$VIRTUAL_ENV/WAVEPAL/carmcmc_pack/carma_pack/src"' >> $VIRTUAL_ENV/bin/activate
+echo 'export PYTHONPATH="$VIRTUAL_ENV:$PYTHONPATH"' >> $VIRTUAL_ENV/bin/activate
+```
 
-# wavepal + CARMCMC, manually (see above):
-git clone https://github.com/Uriel-Merino/WAVEPAL.git
-cd WAVEPAL && sh Linux_install.sh && cd ..
+Reload the environment to apply the new paths:
+```bash
+deactivate
+source spot_wave_v1/bin/activate
+```
 
-export SPOT_WAVE_CARMCMC_PATH=$(pwd)/WAVEPAL/carmcmc/carma_pack/src
-export PYTHONPATH=$PYTHONPATH:/path/to/gls.py
+You can verify the installation by testing the initialization of the C++ libraries:
+```bash
+python -c "import spot_wave as sw; sw.setup_carmcmc(); import gls; print('\nSuccess! Pipeline is ready.')"
 ```
 
 ## Usage — Python API
