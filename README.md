@@ -1,16 +1,10 @@
 # Spot Wave
 ![](banner.jpg)
-Library that systematizes the `SPOT_WAVE.ipynb` pipeline: time-frequency
+Library that systematizes time-frequency
 analysis with [wavepal](https://github.com/guillaumelenoir/WAVEPAL) +
 CARMCMC, wavelet filtering (single or double) of stellar activity in
 radial velocities, and orbital fitting with
-[CONAN](https://github.com/mlendl42/CONAN3) on the winning residuals.
-
-**Scope of this version:** a single target per run. For the systematic
-multi-target sweep (many files / many systems in parallel) keep using
-`analyze_filter_sweep_v3.py` + `analyze_filter_sweep_syst.py` from the
-original pipeline — both could be rewritten in the future to build on
-this library instead of duplicating the logic.
+[CONAN](https://github.com/mlendl42/CONAN3) on the residuals.
 
 ## Structure
 
@@ -22,12 +16,12 @@ spot_wave/
 ├── utils.py          # setup_carmcmc, load_rv_file, test_cwt_feasibility, wavepal_analyze
 ├── filter.py          # single_filter_sweep (1 band) and run_double_filter_sweep (2 bands, order 1/2)
 ├── conan_fit.py        # run_conan_fit, extract_conan_metrics, extract_k_posterior
-└── scalogram.py        # analyze_and_plot, w0_loop (sections 2 and 2.1 of the notebook)
+└── scalogram.py        # analyze_and_plot, w0_loop
 ```
 
 ## Installation
 
-This pipeline requires a virtual environment (`venv`) to isolate C++ bindings and handle dynamic path routing for the system dependencies. 
+This pipeline requires a virtual environment (`venv`). 
 
 ### 1. Create and Activate Virtual Environment
 ```bash
@@ -38,7 +32,7 @@ source spot_wave_v1/bin/activate
 ### 2. Install System Dependencies
 CARMCMC requires BOOST and ARMADILLO system C++ libraries to compile.
 
-**Ubuntu / Debian:**
+**Ubuntu:**
 ```bash
 sudo apt-get update
 sudo apt-get install libboost-all-dev libboost-python-dev libarmadillo-dev
@@ -50,8 +44,8 @@ sudo apt-get install libboost-all-dev libboost-python-dev libarmadillo-dev
 brew install boost armadillo
 ```
 
-### 3. Install spot_wave and CONAN
-Installing `spot_wave` in editable mode automatically clones and installs the required CONAN fork.
+### 3. Install SPOT-WAVE and CONAN
+Installing `SPOT-WAVE` in editable mode automatically clones and installs the required CONAN fork.
 ```bash
 git clone [https://github.com/Uriel-Merino/SPOT-WAVE](https://github.com/Uriel-Merino/SPOT-WAVE)
 cd SPOT-WAVE
@@ -72,8 +66,8 @@ python setup.py build_ext --inplace
 Navigate back to the WAVEPAL root, install the package bypassing dependency checks, and manually install the missing `acor` module:
 ```bash
 cd ../../../
-pip install --no-deps .
 pip install acor
+pip install --no-deps .
 cd ..
 ```
 
@@ -144,38 +138,3 @@ sw.run_conan_fit(
 metrics = sw.extract_conan_metrics("conan_out/", n_data_points=len(t))
 k_med, k_lo1, k_hi1, k_lo3, k_hi3 = sw.extract_k_posterior("conan_out/")
 ```
-
-## Usage — CLI
-
-```bash
-# Simple filter
-python -m spot_wave single \
-    --rv-file my_target.dat --out-dir results/ \
-    --p-rot 55.0 --p-planeta 19.25 \
-    --band-lo 54.5 --band-hi 55.5 \
-    --w0-min 5.5 --w0-max 20.0 --w0-step 0.5
-
-# Double filter
-python -m spot_wave double \
-    --rv-file my_target.dat --out-dir results/ \
-    --p-rot 55.0 --p-planeta 19.25 \
-    --w0-1-min 5.5 --w0-1-max 7.0 --w0-1-step 0.5 \
-    --w0-2-min 14.5 --w0-2-max 20.0 --w0-2-step 0.25 \
-    --hw-prot 0.5 --hw-half 0.5 --orders 1,2
-```
-
-## Notes / to do
-
-- The empirical `S_score` (`eta_activity / eta_planeta` via GLS) is the
-  same selection criterion as in `analyze_filter_sweep_v3.py`; it lives
-  in `filter.compute_empirical_gls_score`.
-- `scalogram.py` covers the "2. SCALOGRAM" and "2.1. Loop w0" sections of
-  the notebook (including capturing the "Re-estimated period range" that
-  wavepal prints).
-- If you share your current `__init__.py` / `filter.py` / `utils.py`,
-  this version can be merged with yours instead of replacing it.
-- wavepal/CARMCMC and CONAN are your own forks
-  ([WAVEPAL](https://github.com/Uriel-Merino/WAVEPAL),
-  [CONAN](https://github.com/Uriel-Merino/CONAN)), not the original
-  repos — any fix you made there (e.g. the "Fixed bug" commit in
-  `carmcmc`/`test`) is already included if you install from those URLs.
