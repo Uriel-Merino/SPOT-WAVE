@@ -63,10 +63,9 @@ cd WAVEPAL/carmcmc_pack/carma_pack/src
 python setup.py build_ext --inplace
 ```
 
-Navigate back to the WAVEPAL root, install the package bypassing dependency checks, and manually install the missing `acor` module:
+Navigate back to the WAVEPAL root, install the package bypassing dependency checks:
 ```bash
 cd ../../../
-pip install acor
 pip install --no-deps .
 cd ..
 ```
