@@ -4,13 +4,12 @@ matplotlib
 scipy
 seaborn
 joblib
-# CONAN (your fork) installs automatically via pyproject.toml (git+https://github.com/Uriel-Merino/CONAN.git)
+acor
+# CONAN installs automatically via pyproject.toml (git+https://github.com/Uriel-Merino/CONAN.git)
 #
 # wavepal (with CARMCMC in carmcmc/) is NOT on PyPI and is not pip-
 # installable: it's a package with Python 2 origins whose carmcmc/
 # compiles against BOOST and ARMADILLO via Linux_install.sh /
 # MacOSX_install.sh. Install it manually and point
 # SPOT_WAVE_CARMCMC_PATH / PYTHONPATH to its paths (see README,
-# "Installation" section):
-#   git clone https://github.com/Uriel-Merino/WAVEPAL.git
-#   cd WAVEPAL && sh Linux_install.sh
+# "Installation" section)
