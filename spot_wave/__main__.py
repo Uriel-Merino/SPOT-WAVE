@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 """
 __main__.py
-CLI de spot_wave para correr el pipeline (filtro simple o doble) sobre UN
-UNICO target: `python -m spot_wave ...`
+spot_wave CLI to run the pipeline (single or double filter) on a SINGLE
+target: `python -m spot_wave ...`
 
-Ejemplos
+Examples
 --------
-Filtro simple (una banda, un rango de w0):
+Simple filter (one band, one w0 range):
 
     python -m spot_wave single \
-        --rv-file mi_target.dat --out-dir resultados/ \
+        --rv-file my_target.dat --out-dir results/ \
         --p-rot 55.0 --p-planeta 19.25 \
         --band-lo 54.5 --band-hi 55.5 \
         --w0-min 5.5 --w0-max 20.0 --w0-step 0.5
 
-Filtro doble, orden 1 (Prot primero) + orden 2 (Prot/2 primero):
+Double filter, order 1 (Prot first) + order 2 (Prot/2 first):
 
     python -m spot_wave double \
-        --rv-file mi_target.dat --out-dir resultados/ \
+        --rv-file my_target.dat --out-dir results/ \
         --p-rot 55.0 --p-planeta 19.25 \
         --w0-1-min 5.5 --w0-1-max 7.0 --w0-1-step 0.5 \
         --w0-2-min 14.5 --w0-2-max 20.0 --w0-2-step 0.25 \
@@ -35,21 +35,21 @@ from . import (
 
 
 def _common_args(p):
-    p.add_argument("--rv-file", required=True, help="Fichero .dat de RVs (time rv rv_err [instrument])")
-    p.add_argument("--out-dir", required=True, help="Carpeta de salida")
-    p.add_argument("--p-rot", type=float, required=True, help="Periodo de rotacion (dias)")
-    p.add_argument("--p-planeta", type=float, required=True, help="Periodo candidato del planeta (dias)")
+    p.add_argument("--rv-file", required=True, help="RV .dat file (time rv rv_err [instrument])")
+    p.add_argument("--out-dir", required=True, help="Output folder")
+    p.add_argument("--p-rot", type=float, required=True, help="Rotation period (days)")
+    p.add_argument("--p-planeta", type=float, required=True, help="Candidate planet period (days)")
     p.add_argument("--permin", type=float, default=1.0)
     p.add_argument("--permax", type=float, default=200.0)
-    p.add_argument("--carmcmc-path", default=None, help="Ruta a carma_pack/src (opcional)")
+    p.add_argument("--carmcmc-path", default=None, help="Path to carma_pack/src (optional)")
     p.add_argument("--quiet", action="store_true")
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="spot_wave", description="Pipeline de filtrado wavelet de un unico target")
+    parser = argparse.ArgumentParser(prog="spot_wave", description="Single-target wavelet filtering pipeline")
     sub = parser.add_subparsers(dest="mode", required=True)
 
-    p_single = sub.add_parser("single", help="Filtro simple: una banda, un rango de w0")
+    p_single = sub.add_parser("single", help="Simple filter: one band, one w0 range")
     _common_args(p_single)
     p_single.add_argument("--band-lo", type=float, required=True)
     p_single.add_argument("--band-hi", type=float, required=True)
@@ -57,7 +57,7 @@ def main(argv=None):
     p_single.add_argument("--w0-max", type=float, required=True)
     p_single.add_argument("--w0-step", type=float, default=0.5)
 
-    p_double = sub.add_parser("double", help="Filtro doble: dos bandas (Prot y Prot/2), orden 1 y/o 2")
+    p_double = sub.add_parser("double", help="Double filter: two bands (Prot and Prot/2), order 1 and/or 2")
     _common_args(p_double)
     p_double.add_argument("--w0-1-min", type=float, required=True)
     p_double.add_argument("--w0-1-max", type=float, required=True)
@@ -65,9 +65,9 @@ def main(argv=None):
     p_double.add_argument("--w0-2-min", type=float, required=True)
     p_double.add_argument("--w0-2-max", type=float, required=True)
     p_double.add_argument("--w0-2-step", type=float, default=0.5)
-    p_double.add_argument("--hw-prot", type=float, default=0.5, help="Semi-anchura banda Prot (dias)")
-    p_double.add_argument("--hw-half", type=float, default=0.5, help="Semi-anchura banda Prot/2 (dias)")
-    p_double.add_argument("--orders", default="1,2", help="Ordenes a probar: '1', '2' o '1,2'")
+    p_double.add_argument("--hw-prot", type=float, default=0.5, help="Prot band half-width (days)")
+    p_double.add_argument("--hw-half", type=float, default=0.5, help="Prot/2 band half-width (days)")
+    p_double.add_argument("--orders", default="1,2", help="Orders to try: '1', '2', or '1,2'")
 
     args = parser.parse_args(argv)
     verbose = not args.quiet
@@ -116,9 +116,9 @@ def main(argv=None):
         )
         save_winner_file(t, best["residuals"], rv_err, out_file)
 
-    print(f"\nGanador -> S_score={best['S_score']:.4g} "
+    print(f"\nWinner -> S_score={best['S_score']:.4g} "
           f"(eta_activity={best['eta_activity']:.4g}, eta_planeta={best['eta_planeta']:.4g})")
-    print(f"Residuos guardados en: {out_file}")
+    print(f"Residuals saved to: {out_file}")
     return 0
 
 

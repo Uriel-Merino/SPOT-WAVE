@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """
 utils.py
-Funciones de soporte de spot_wave: localizacion de CARMCMC, carga de ficheros
-de RV, chequeo de viabilidad de la CWT y wrapper de wavepal.timefreq_analysis.
+Support functions for spot_wave: locating CARMCMC, loading RV files,
+checking CWT feasibility, and a wrapper around
+wavepal.timefreq_analysis.
 
-Todo lo que aqui se usa proviene de tu notebook SPOT_WAVE.ipynb (celdas 1,
-1.1 y 1.2), generalizado para no depender de rutas ni de un fichero concreto.
+Everything here comes from your notebook SPOT_WAVE.ipynb (cells 1, 1.1
+and 1.2), generalized so it no longer depends on hardcoded paths or a
+single specific file.
 """
 
 import os
@@ -17,32 +19,32 @@ import wavepal as wv
 # ---------------------------------------------------------------------------
 # CARMCMC
 # ---------------------------------------------------------------------------
-# wavepal usa CARMCMC (con extensiones C++) para modelar el ruido correlado
-# y estimar los niveles de confianza del scalogram. La ruta al build de
-# carma_pack es especifica de cada maquina, asi que en vez de dejarla
-# hardcodeada (como en el notebook) se resuelve, en este orden:
-#   1) argumento explicito `path`
-#   2) variable de entorno SPOT_WAVE_CARMCMC_PATH
-#   3) no se toca sys.path (asumimos que carmcmc ya es importable)
+# wavepal uses CARMCMC (with C++ extensions) to model correlated noise and
+# estimate the confidence levels of the scalogram. The path to the
+# carma_pack build is machine-specific, so instead of hardcoding it (as in
+# the notebook) it is resolved, in this order:
+#   1) explicit `path` argument
+#   2) SPOT_WAVE_CARMCMC_PATH environment variable
+#   3) sys.path is left untouched (we assume carmcmc is already importable)
 _CARMCMC_LOADED = False
 
 
 def setup_carmcmc(path=None, verbose=True):
     """
-    Añade al sys.path la ruta al build de carma_pack (CARMCMC) e importa el
-    modulo, igual que la celda 1 de SPOT_WAVE.ipynb.
+    Adds the path to the carma_pack (CARMCMC) build to sys.path and
+    imports the module, just like cell 1 of SPOT_WAVE.ipynb.
 
     Parameters
     ----------
-    path : str, opcional
-        Ruta a .../carmcmc/carma_pack/src . Si no se indica, se usa la
-        variable de entorno SPOT_WAVE_CARMCMC_PATH si existe.
+    path : str, optional
+        Path to .../carmcmc/carma_pack/src . If not given, the
+        SPOT_WAVE_CARMCMC_PATH environment variable is used if it exists.
     verbose : bool
-        Si True, imprime el mensaje de confirmacion (como en el notebook).
+        If True, print the confirmation message (as in the notebook).
 
     Returns
     -------
-    module carmcmc, o None si no se pudo cargar.
+    carmcmc module, or None if it could not be loaded.
     """
     global _CARMCMC_LOADED
 
@@ -54,8 +56,8 @@ def setup_carmcmc(path=None, verbose=True):
         import carmcmc  # noqa: F401
     except ImportError as e:
         if verbose:
-            print("[spot_wave] Aviso: no se pudo importar carmcmc ({0}). "
-                  "Configura SPOT_WAVE_CARMCMC_PATH o pasa `path=` a "
+            print("[spot_wave] Warning: could not import carmcmc ({0}). "
+                  "Set SPOT_WAVE_CARMCMC_PATH or pass `path=` to "
                   "setup_carmcmc().".format(e))
         return None
 
@@ -66,33 +68,34 @@ def setup_carmcmc(path=None, verbose=True):
 
 
 # ---------------------------------------------------------------------------
-# CARGA DE DATOS DE RV
+# RV DATA LOADING
 # ---------------------------------------------------------------------------
 def load_rv_file(filename, subtract_instrument_means=True, avoid_time_collisions=True,
                   eps=1.1e-5):
     """
-    Carga un fichero de RV con el mismo criterio que la celda 1.1 del
-    notebook: detecta si hay cabecera, detecta el nº de columnas, y si hay
-    columna de instrumento (4a columna) resta la media de RV por instrumento.
+    Loads an RV file with the same logic as cell 1.1 of the notebook:
+    detects whether there is a header, detects the number of columns, and
+    if there is an instrument column (4th column) subtracts the mean RV
+    per instrument.
 
-    Formato esperado por columnas: time, RV, RV_err[, instrument]
+    Expected column layout: time, RV, RV_err[, instrument]
 
     Parameters
     ----------
     filename : str
-        Ruta al fichero .dat de RVs.
+        Path to the RV .dat file.
     subtract_instrument_means : bool
-        Si hay varios instrumentos, resta la media de cada uno (offset).
+        If there are several instruments, subtract each one's mean (offset).
     avoid_time_collisions : bool
-        Si True, desplaza en `eps` los tiempos duplicados/no crecientes
-        (necesario para wavepal, igual que en analyze_filter_sweep_v3.py).
+        If True, shift duplicated/non-increasing timestamps by `eps`
+        (required by wavepal, same as in analyze_filter_sweep_v3.py).
     eps : float
-        Desplazamiento temporal usado para evitar colisiones.
+        Time shift used to avoid collisions.
 
     Returns
     -------
     t, rv, rv_err : np.ndarray
-    instruments : np.ndarray de str (con "single_instrument" si no habia)
+    instruments : np.ndarray of str ("single_instrument" if none were found)
     """
     with open(filename) as f:
         first_line = f.readline().strip()
@@ -139,10 +142,10 @@ def load_rv_file(filename, subtract_instrument_means=True, avoid_time_collisions
 
 def parse_k_true(filename, header_regex=None):
     """
-    Extrae la semi-amplitud K "verdadera" (inyectada) de la primera linea
-    del fichero, si el fichero es sintetico y la lleva en la cabecera
-    (formato "K=...", "K_1: ...", etc.). Devuelve np.nan si no se encuentra.
-    Util para validar la recuperacion de K de un unico target sintetico.
+    Extracts the "true" (injected) semi-amplitude K from the file's first
+    line, if the file is synthetic and carries it in the header (format
+    "K=...", "K_1: ...", etc.). Returns np.nan if not found. Useful to
+    validate K recovery for a single synthetic target.
     """
     import re
     regex = header_regex or re.compile(r"K\w*\s*[=:]\s*([0-9]*\.?[0-9]+)", re.IGNORECASE)
@@ -155,16 +158,17 @@ def parse_k_true(filename, header_regex=None):
 
 
 # ---------------------------------------------------------------------------
-# VIABILIDAD DE LA CWT
+# CWT FEASIBILITY
 # ---------------------------------------------------------------------------
 def test_cwt_feasibility(wave_obj, w0=8.5, verbose=True):
     """
-    Chequeo rapido de si el dataset aguanta una CWT con el w0 dado.
-    Identico a la funcion de la celda 1.2 del notebook.
+    Quick sanity check to see if the dataset can handle a CWT with the
+    given w0. Identical to the function in cell 1.2 of the notebook.
 
-    Nota: son aproximaciones teoricas (Torrence & Compo / wavepal). Segun el
-    nivel de ruido y la distribucion de huecos en el tiempo, puedes ver
-    señales ligeramente fuera de estos limites. Usalo como orientacion.
+    Note: these are theoretical approximations (Torrence & Compo /
+    wavepal). Depending on your noise level and the distribution of gaps
+    in time, you might spot signals slightly outside these bounds. Use it
+    as a rule of thumb.
     """
     N = wave_obj.t.size
     w0_min = 5.5
@@ -213,9 +217,9 @@ def wavepal_analyze(t, y, w0, permin=1.0, permax=200.0, deltaj=0.01,
                      percentile=(95., 99.9), t_units="days", mydata_units="m/s",
                      trend_degree=-1, verbose=False):
     """
-    Crea y ejecuta un objeto wavepal.Wavepal para (t, y) con un w0 dado.
-    Equivalente a wavepal_analyze() de analyze_filter_sweep_v3.py, pero
-    generalizado (percentiles y unidades configurables).
+    Creates and runs a wavepal.Wavepal object for (t, y) with a given w0.
+    Equivalent to wavepal_analyze() in analyze_filter_sweep_v3.py, but
+    generalized (configurable percentiles and units).
     """
     wave = wv.Wavepal(t, y, "BJD", "STEP", t_units=t_units, mydata_units=mydata_units)
     wave.check_data()

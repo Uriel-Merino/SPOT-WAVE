@@ -2,19 +2,19 @@
 """
 spot_wave
 =========
-Libreria que sistematiza tu pipeline de SPOT_WAVE.ipynb: analisis
-tiempo-frecuencia con wavepal/CARMCMC, filtrado wavelet (simple o doble)
-de la actividad estelar en RVs, y ajuste orbital con CONAN sobre los
-residuos ganadores. Pensada, de momento, para UN UNICO target por
-ejecucion (para el barrido sistematico multi-target, ver los scripts
-`analyze_filter_sweep_v3.py` / `analyze_filter_sweep_syst.py` del pipeline
-original, que usan esta misma libreria por debajo).
+Library that systematizes your SPOT_WAVE.ipynb pipeline: time-frequency
+analysis with wavepal/CARMCMC, wavelet filtering (single or double) of
+stellar activity in RVs, and orbital fitting with CONAN on the winning
+residuals. Currently designed for a SINGLE target per run (for the
+systematic multi-target sweep, see the original pipeline scripts
+`analyze_filter_sweep_v3.py` / `analyze_filter_sweep_syst.py`, which use
+this same library under the hood).
 
-Uso tipico
-----------
+Typical usage
+-------------
 >>> import spot_wave as sw
->>> sw.setup_carmcmc()  # opcional si CARMCMC ya esta en el PYTHONPATH
->>> t, rv, rv_err, instruments = sw.load_rv_file("mi_target.dat")
+>>> sw.setup_carmcmc()  # optional if CARMCMC is already on the PYTHONPATH
+>>> t, rv, rv_err, instruments = sw.load_rv_file("my_target.dat")
 >>> w0_grid = sw.make_w0_grid(5.5, 20.0, 0.5)
 >>> best = sw.single_filter_sweep(
 ...     t, rv, rv_err, w0_grid, band=(54.5, 55.5),

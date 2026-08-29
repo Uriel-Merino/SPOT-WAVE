@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 scalogram.py
-Funciones de la seccion "2. SCALOGRAM" de SPOT_WAVE.ipynb: analisis
-tiempo-frecuencia con un w0 fijo, ploteo del scalogram, y el barrido en w0
-("2.1. Loop w0") que genera un PDF por w0 y opcionalmente re-estima el
-rango de periodos detectable a partir del texto que imprime wavepal.
+Functions from the "2. SCALOGRAM" section of SPOT_WAVE.ipynb:
+time-frequency analysis with a fixed w0, scalogram plotting, and the w0
+sweep ("2.1. Loop w0") that produces one PDF per w0 and, optionally,
+re-estimates the detectable period range from the text wavepal prints.
 """
 
 import os
@@ -29,9 +29,9 @@ def analyze_and_plot(wave, w0=7.0, permin=1.0, permax=200.0, deltaj=0.01,
                       period_string=None, dashed_periods=None, figsize=(24, 12),
                       **plot_kwargs):
     """
-    Ejecuta wave.timefreq_analysis con un w0 fijo y devuelve la figura del
-    scalogram (equivalente a las celdas 2, y a las celdas 10-12 del
-    notebook, con w0=7.0 por defecto).
+    Runs wave.timefreq_analysis with a fixed w0 and returns the scalogram
+    figure (equivalent to cell 2, and cells 10-12 of the notebook, with
+    w0=7.0 by default).
     """
     time_string = time_string or DEFAULT_TIME_STRING
     period_string = period_string or DEFAULT_PERIOD_STRING
@@ -61,15 +61,15 @@ def w0_loop(wave, output_dir, w0_min=5.5, w0_max=196.0, w0_step=2.0,
             time_string=None, period_string=None, dashed_periods=None,
             figsize=(24, 12), save_period_ranges=True, verbose=True):
     """
-    Barrido en w0: para cada valor guarda un PDF del scalogram y, si
-    `save_period_ranges`, captura el "Re-estimated period range" que
-    imprime wavepal para dejar constancia del rango de periodos fiable en
-    cada w0 (equivalente a la celda 2.1 del notebook).
+    w0 sweep: for each value, saves a scalogram PDF and, if
+    `save_period_ranges`, captures the "Re-estimated period range" that
+    wavepal prints, to keep a record of the reliable period range for
+    each w0 (equivalent to cell 2.1 of the notebook).
 
     Returns
     -------
-    list[(w0, period_min, period_max)]  (period_min/max = np.nan si no se
-    pudo parsear la salida de wavepal para ese w0).
+    list[(w0, period_min, period_max)]  (period_min/max = np.nan if
+    wavepal's output could not be parsed for that w0).
     """
     os.makedirs(output_dir, exist_ok=True)
     w0_values = np.arange(w0_min, w0_max + w0_step / 2, w0_step)
@@ -94,7 +94,7 @@ def w0_loop(wave, output_dir, w0_min=5.5, w0_max=196.0, w0_step=2.0,
             else:
                 per_min, per_max = np.nan, np.nan
                 if verbose:
-                    print(f"[AVISO] No se encontro 'Re-estimated period range' para w0={w0:.2f}")
+                    print(f"[WARNING] Could not find 'Re-estimated period range' for w0={w0:.2f}")
             results.append((float(w0), per_min, per_max))
         else:
             fig = analyze_and_plot(
@@ -115,6 +115,6 @@ def w0_loop(wave, output_dir, w0_min=5.5, w0_max=196.0, w0_step=2.0,
                     f.write(f"{w0_i:.4f}\t{pmin_i:.6f}\t{pmax_i:.6f}\n")
 
     if verbose and save_period_ranges:
-        print(f"Rangos de periodos guardados en: {ranges_file}")
+        print(f"Period ranges saved to: {ranges_file}")
 
     return results

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 conan_fit.py
-Wrapper de CONAN para ajustar los residuos ganadores (single u double
-filter) de UN target, y extraer sus metricas/posteriores.
+CONAN wrapper to fit the winning residuals (single or double filter) of a
+SINGLE target, and extract their metrics/posteriors.
 
-Reune, sin cambios de logica, run_conan_fit / extract_conan_metrics /
-extract_k_posterior de analyze_filter_sweep_v3.py y
+Gathers, with no logic changes, run_conan_fit / extract_conan_metrics /
+extract_k_posterior from analyze_filter_sweep_v3.py and
 analyze_filter_sweep_syst.py.
 """
 
@@ -16,31 +16,31 @@ import numpy as np
 def run_conan_fit(filtered_data_files, data_path, output_folder, planet_pars,
                    m_star, gamma_prior, n_planets=1, n_live=500, n_cpus_conan=1):
     """
-    Lanza un ajuste CONAN sobre el/los fichero(s) de residuos indicados.
+    Launches a CONAN fit on the given residual file(s).
 
     Parameters
     ----------
     filtered_data_files : list[str]
-        Nombres de fichero (relativos a `data_path`) con el residuo ganador.
+        File names (relative to `data_path`) with the winning residual.
     data_path : str
-        Carpeta donde estan esos ficheros.
+        Folder containing those files.
     output_folder : str
-        Carpeta de salida del fit (se crea si no existe).
+        Fit output folder (created if it doesn't exist).
     planet_pars : dict
-        kwargs para rv_obj.planet_parameters(**planet_pars), p.ej.:
+        kwargs for rv_obj.planet_parameters(**planet_pars), e.g.:
             dict(T_0=[(t0, sigma_t0)], Period=[(P, sigma_P)],
                  Eccentricity=[0], omega=[90],
                  K=[(0.0, K_prior_max/2., K_prior_max)])
     m_star : tuple(float, float)
-        (masa_estelar, error) en M_sol.
+        (stellar_mass, error) in M_sun.
     gamma_prior : list
-        Prior del offset RV, p.ej. [(0, 30)].
+        RV offset prior, e.g. [(0, 30)].
     n_planets, n_live, n_cpus_conan : int
-        Parametros de CONAN.fit_setup / sampling.
+        CONAN.fit_setup / sampling parameters.
 
     Returns
     -------
-    str : ruta al fichero posteriors.dat generado.
+    str : path to the generated posteriors.dat file.
     """
     import CONAN
     os.makedirs(output_folder, exist_ok=True)
@@ -61,9 +61,10 @@ def run_conan_fit(filtered_data_files, data_path, output_folder, planet_pars,
 
 def extract_conan_metrics(output_folder, n_data_points, extra_params=2):
     """
-    Lee evidence.dat y AIC_BIC.dat del output de CONAN y calcula logZ,
-    AIC/BIC "crudos" de CONAN y AIC/BIC corregidos añadiendo `extra_params`
-    parametros extra (p.ej. los del filtrado wavelet) al conteo de CONAN.
+    Reads evidence.dat and AIC_BIC.dat from CONAN's output and computes
+    logZ, CONAN's "raw" AIC/BIC, and corrected AIC/BIC that add
+    `extra_params` extra parameters (e.g. from the wavelet filtering) to
+    CONAN's parameter count.
     """
     evidence_file = os.path.join(output_folder, "evidence.dat")
     aic_bic_file = os.path.join(output_folder, "AIC_BIC.dat")
@@ -95,13 +96,14 @@ def extract_conan_metrics(output_folder, n_data_points, extra_params=2):
 
 def extract_k_posterior(output_folder, planet_index=1):
     """
-    Lee results_med.dat y extrae de forma flexible K (o K_<planet_index>
-    si hay varios planetas): mediana + intervalos 1-sigma y 3-sigma.
+    Reads results_med.dat and flexibly extracts K (or K_<planet_index> if
+    there are several planets): median plus 1-sigma and 3-sigma
+    intervals.
 
     Returns
     -------
     tuple (K_med, K_lo_1sigma, K_hi_1sigma, K_lo_3sigma, K_hi_3sigma)
-    Todo np.nan si no se encuentra la fila o el fichero no existe.
+    All np.nan if the row is not found or the file does not exist.
     """
     res_path = os.path.join(output_folder, "results_med.dat")
     if not os.path.exists(res_path):
@@ -133,9 +135,9 @@ def extract_k_posterior(output_folder, planet_index=1):
 
 def evaluate_k_recovery(k_med, k_lo1, k_hi1, k_lo3, k_hi3, k_true):
     """
-    Compara la K recuperada por CONAN con la K inyectada (si se conoce,
-    p.ej. via utils.parse_k_true en datos sinteticos). Devuelve un dict
-    listo para volcar en un resumen de resultados.
+    Compares the K recovered by CONAN with the injected K (if known, e.g.
+    via utils.parse_k_true on synthetic data). Returns a dict ready to
+    drop into a results summary.
     """
     if np.isnan(k_true):
         return {"recovered_within_1sigma": None, "recovered_within_3sigma": None,

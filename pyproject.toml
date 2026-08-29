@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "spot_wave"
 dynamic = ["version"]
-description = "Filtrado wavelet de actividad estelar en RVs (wavepal + CARMCMC) y ajuste orbital con CONAN, para un unico target."
+description = "Wavelet filtering of stellar activity in RVs (wavepal + CARMCMC) and orbital fitting with CONAN, for a single target."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
@@ -17,13 +17,13 @@ dependencies = [
     "scipy",
     "seaborn",
     "joblib",
-    # CONAN (tu fork) SI tiene un setup.py/pyproject.toml modernos ->
-    # pip lo instala solo, sin pasos manuales:
+    # CONAN (your fork) DOES have a modern setup.py/pyproject.toml ->
+    # pip installs it automatically, no manual steps:
     "conan-exoplanet @ git+https://github.com/Uriel-Merino/CONAN.git",
-    # wavepal (con CARMCMC en carmcmc/) NO se declara aqui: su instalacion
-    # compila carmcmc contra BOOST/ARMADILLO via Linux_install.sh /
-    # MacOSX_install.sh, algo que pip no puede hacer por ti. Instalalo a
-    # mano (ver README, seccion "Instalacion").
+    # wavepal (with CARMCMC in carmcmc/) is NOT declared here: its
+    # installation compiles carmcmc against BOOST/ARMADILLO via
+    # Linux_install.sh / MacOSX_install.sh, which pip cannot do for you.
+    # Install it manually (see README, "Installation" section).
 ]
 
 [project.scripts]
