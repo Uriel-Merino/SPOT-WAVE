@@ -60,7 +60,7 @@ External dependencies:
   the repo.
 
 ```bash
-git clone <your-spot_wave-repo>
+git clone [Uriel-Merino/WAVEPAL](https://github.com/Uriel-Merino/SPOT-WAVE)
 cd spot_wave
 pip install -e .          # installs spot_wave + CONAN automatically
 
