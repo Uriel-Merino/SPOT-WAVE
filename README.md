@@ -1,5 +1,5 @@
 # Spot Wave
-
+![](banner.png)
 Library that systematizes the `SPOT_WAVE.ipynb` pipeline: time-frequency
 analysis with [wavepal](https://github.com/guillaumelenoir/WAVEPAL) +
 CARMCMC, wavelet filtering (single or double) of stellar activity in
