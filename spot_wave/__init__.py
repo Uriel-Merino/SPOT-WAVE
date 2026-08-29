@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-SPOT-WAVE
+spot_wave
 """
 
 from .__version__ import __version__
