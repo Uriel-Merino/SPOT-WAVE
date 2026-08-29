@@ -17,12 +17,10 @@ dependencies = [
     "scipy",
     "seaborn",
     "joblib",
-    # CONAN (your fork) DOES have a modern setup.py/pyproject.toml ->
-    # pip installs it automatically, no manual steps:
+    "acor",
     "conan-exoplanet @ git+https://github.com/Uriel-Merino/CONAN.git",
     # wavepal (with CARMCMC in carmcmc/) is NOT declared here: its
-    # installation compiles carmcmc against BOOST/ARMADILLO via
-    # Linux_install.sh / MacOSX_install.sh, which pip cannot do for you.
+    # installation compiles carmcmc against BOOST/ARMADILLO.
     # Install it manually (see README, "Installation" section).
 ]
 
