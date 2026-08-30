@@ -7,29 +7,35 @@ CONAN to fit the winning residuals (single or double filter), and extract their 
 import os
 import numpy as np
 
-
 def build_planet_pars(planets):
     """
-    Builds the `planet_pars` dict expected by CONAN.load_rvs /
-    rv_obj.planet_parameters(**planet_pars) from a list of per-planet
-    dicts, so multi-planet systems don't have to be assembled by hand.
-
-    Arguments:
-    planets : list[dict]
-        Each dict should contain the keys:
-            t0, t0_err, period, period_err, k_prior_max
-        and optionally:
-            eccentricity, omega
+        Builds the `planet_pars` dict expected by CONAN.load_rvs /
+        rv_obj.planet_parameters(**planet_pars) from a list of per-planet
+        dicts, so multi-planet systems don't have to be assembled by hand.
+    
+        Arguments:
+        planets : list[dict]
+            Each dict should contain the keys:
+                t0, t0_err, period, period_err, k_prior_max
+            and optionally:
+                eccentricity, omega
     """
-    planet_pars = dict(T_0=[], Period=[], Eccentricity=[], omega=[], K=[])
-    for pl in planets:
-        planet_pars["T_0"].append((pl["t0"], pl["t0_err"]))
-        planet_pars["Period"].append((pl["period"], pl["period_err"]))
-        planet_pars["Eccentricity"].append(pl.get("eccentricity", 0))
-        planet_pars["omega"].append(pl.get("omega", 90))
-        k_max = pl["k_prior_max"]
-        planet_pars["K"].append((0.2, k_max / 2.0, k_max))
-    return planet_pars, len(planets)
+    if isinstance(planets, list) and len(planets) > 0:
+        planet_pars = planets[0]
+    else:
+        planet_pars = planets
+
+    if "T_0" in planet_pars:
+        n_planets = len(planet_pars["T_0"])
+    else:
+        n_planets = 1 
+        
+    if "Eccentricity" not in planet_pars:
+        planet_pars["Eccentricity"] = [0] * n_planets
+    if "omega" not in planet_pars:
+        planet_pars["omega"] = [90] * n_planets
+        
+    return planet_pars, n_planets
 
 
 def run_conan_fit(filtered_data_files, data_path, output_folder, planet_pars,

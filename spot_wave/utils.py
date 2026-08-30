@@ -9,6 +9,7 @@ import os
 import sys
 import numpy as np
 import wavepal as wv
+import matplotlib.pyplot as plt
 
 
 _CARMCMC_LOADED = False
@@ -118,6 +119,42 @@ def load_rv_file(filename, subtract_instrument_means=True, avoid_time_collisions
 
     return t, rv, rv_err, instruments
 
+
+###########################
+"""INITIAL PLOTTING"""
+###########################
+
+def rv_plot(t, rv, rv_err=None, instruments=None, xlabel="Time (days)", ylabel="RV (m/s)", show=True):
+    """
+    RV plot function for quick visualization, supporting multiple instruments.
+    """
+    plt.figure(figsize=(10, 5))
+    
+    t = np.array(t)
+    rv = np.array(rv)
+    if rv_err is not None:
+        rv_err = np.array(rv_err)
+        
+    if instruments is not None:
+        instruments = np.array(instruments)
+        unique_insts = np.unique(instruments)
+        
+        for inst in unique_insts:
+            mask = (instruments == inst)
+            err = rv_err[mask] if rv_err is not None else None
+            plt.errorbar(t[mask], rv[mask], yerr=err, fmt='o', capsize=3, label=inst)
+            
+        plt.legend(loc="best")
+        
+    else:
+        plt.errorbar(t, rv, yerr=rv_err, fmt='o', ecolor='gray', capsize=3)
+        
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.grid(True, linestyle='--', alpha=0.7)
+    
+    if show:
+        plt.show()
 
 ###########################
 """EXTRACTING K INJECTED"""
