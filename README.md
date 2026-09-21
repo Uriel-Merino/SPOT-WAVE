@@ -47,7 +47,7 @@ brew install boost armadillo
 ### 3. Install SPOT-WAVE and CONAN
 Installing `SPOT-WAVE` in editable mode automatically clones and installs the required CONAN fork.
 ```bash
-git clone [https://github.com/Uriel-Merino/SPOT-WAVE](https://github.com/Uriel-Merino/SPOT-WAVE)
+git clone https://github.com/Uriel-Merino/SPOT-WAVE
 cd SPOT-WAVE
 pip install -e .
 cd ..
