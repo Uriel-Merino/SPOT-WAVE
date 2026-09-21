@@ -58,7 +58,7 @@ The original `Linux_install.sh` and `MacOSX_install.sh` scripts are deprecated f
 
 Clone the repository and compile the C++ extension in place:
 ```bash
-git clone [https://github.com/Uriel-Merino/WAVEPAL.git](https://github.com/Uriel-Merino/WAVEPAL.git)
+git clone https://github.com/Uriel-Merino/WAVEPAL.git
 cd WAVEPAL/carmcmc_pack/carma_pack/src
 python setup.py build_ext --inplace
 ```
